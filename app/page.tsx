@@ -1,18 +1,31 @@
 import { fetchAllNews } from "@/lib/fetchers";
 import NewsCard from "@/components/NewsCard";
 import { NewsSource } from "@/lib/types";
+import Link from "next/link";
 
 export const revalidate = 300; // 5 minutes
 
-export default async function Home() {
-  const news = await fetchAllNews();
+const sources: { key: NewsSource | "all"; label: string }[] = [
+  { key: "all", label: "همه" },
+  { key: "hackernews", label: "Hacker News" },
+  { key: "devto", label: "Dev.to" },
+  { key: "reddit", label: "Reddit" },
+  { key: "lobsters", label: "Lobsters" },
+  { key: "hashnode", label: "Hashnode" },
+];
 
-  const sources: { key: NewsSource | "all"; label: string }[] = [
-    { key: "all", label: "همه" },
-    { key: "hackernews", label: "Hacker News" },
-    { key: "devto", label: "Dev.to" },
-    { key: "reddit", label: "Reddit" },
-  ];
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: { source?: string };
+}) {
+  const allNews = await fetchAllNews();
+  const activeSource = (searchParams.source as NewsSource | "all") || "all";
+
+  const news =
+    activeSource === "all"
+      ? allNews
+      : allNews.filter((item) => item.source === activeSource);
 
   return (
     <div className="min-h-screen">
@@ -35,22 +48,30 @@ export default async function Home() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8">
-        {/* Source filters - simple links for now (client filter would need state) */}
+        {/* Real source filters */}
         <div className="flex flex-wrap gap-2 mb-8">
-          {sources.map((s) => (
-            <span
-              key={s.key}
-              className="px-4 py-1.5 rounded-full text-sm font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
-            >
-              {s.label}
-            </span>
-          ))}
+          {sources.map((s) => {
+            const isActive = activeSource === s.key;
+            return (
+              <Link
+                key={s.key}
+                href={s.key === "all" ? "/" : `/?source=${s.key}`}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                }`}
+              >
+                {s.label}
+              </Link>
+            );
+          })}
         </div>
 
         {news.length === 0 ? (
           <div className="text-center py-20 text-slate-500">
-            <p className="text-lg">خبری پیدا نشد 😢</p>
-            <p className="text-sm mt-2">لطفاً چند لحظه دیگر دوباره امتحان کن</p>
+            <p className="text-lg">خبری از این منبع پیدا نشد 😢</p>
+            <p className="text-sm mt-2">منبع دیگری را امتحان کن</p>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
@@ -63,7 +84,7 @@ export default async function Home() {
 
       <footer className="border-t border-slate-200 dark:border-slate-800 mt-12 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
         <p>
-          ساخته شده با ❤️ و Next.js • منابع: Hacker News + Dev.to + Reddit
+          ساخته شده با ❤️ و Next.js • منابع: HN + Dev.to + Reddit + Lobsters + Hashnode
         </p>
         <p className="mt-1 text-xs">
           داده‌ها هر ۵ دقیقه به‌روز می‌شوند

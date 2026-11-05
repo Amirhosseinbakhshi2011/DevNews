@@ -21,7 +21,7 @@ async function fetchHackerNews(limit = 15): Promise<NewsItem[]> {
     );
 
     return items
-      .filter((item) => item && item.title && item.url)
+      .filter((item) => item && item.title && (item.url || item.text))
       .map((item) => ({
         id: `hn-${item.id}`,
         title: item.title,
@@ -94,7 +94,7 @@ async function fetchReddit(limit = 12): Promise<NewsItem[]> {
         return {
           id: `reddit-${d.id}`,
           title: d.title,
-          url: d.url.startsWith("http") ? d.url : `https://reddit.com${d.permalink}`,
+          url: d.url?.startsWith("http") ? d.url : `https://reddit.com${d.permalink}`,
           source: "reddit" as const,
           author: d.author,
           points: d.ups,
@@ -108,14 +108,100 @@ async function fetchReddit(limit = 12): Promise<NewsItem[]> {
   }
 }
 
+// Lobsters
+async function fetchLobsters(limit = 12): Promise<NewsItem[]> {
+  try {
+    const res = await fetch("https://lobste.rs/hottest.json", {
+      next: { revalidate: 300 },
+    });
+    const posts = await res.json();
+
+    return posts.slice(0, limit).map((p: any) => ({
+      id: `lobsters-${p.short_id}`,
+      title: p.title,
+      url: p.url || `https://lobste.rs/s/${p.short_id}`,
+      source: "lobsters" as const,
+      author: p.submitter_user?.username,
+      points: p.score,
+      comments: p.comment_count,
+      publishedAt: p.created_at,
+      tags: p.tags || [],
+    }));
+  } catch (e) {
+    console.error("Lobsters fetch error", e);
+    return [];
+  }
+}
+
+// Hashnode (GraphQL)
+async function fetchHashnode(limit = 12): Promise<NewsItem[]> {
+  try {
+    const query = `
+      query {
+        feed(first: ${limit}) {
+          edges {
+            node {
+              id
+              title
+              url
+              author {
+                name
+                username
+              }
+              reactionCount
+              responseCount
+              publishedAt
+              tags {
+                name
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const res = await fetch("https://gql.hashnode.com", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query }),
+      next: { revalidate: 300 },
+    });
+
+    const json = await res.json();
+    const edges = json?.data?.feed?.edges || [];
+
+    return edges.map((edge: any) => {
+      const node = edge.node;
+      return {
+        id: `hashnode-${node.id}`,
+        title: node.title,
+        url: node.url,
+        source: "hashnode" as const,
+        author: node.author?.name || node.author?.username,
+        points: node.reactionCount,
+        comments: node.responseCount,
+        publishedAt: node.publishedAt,
+        tags: (node.tags || []).map((t: any) => t.name),
+      };
+    });
+  } catch (e) {
+    console.error("Hashnode fetch error", e);
+    return [];
+  }
+}
+
 export async function fetchAllNews(): Promise<NewsItem[]> {
-  const [hn, devto, reddit] = await Promise.all([
-    fetchHackerNews(15),
-    fetchDevTo(15),
-    fetchReddit(12),
+  const [hn, devto, reddit, lobsters, hashnode] = await Promise.all([
+    fetchHackerNews(12),
+    fetchDevTo(12),
+    fetchReddit(10),
+    fetchLobsters(10),
+    fetchHashnode(10),
   ]);
 
-  const all = [...hn, ...devto, ...reddit];
+  const all = [...hn, ...devto, ...reddit, ...lobsters, ...hashnode];
 
   // Sort by publishedAt descending
   all.sort(

@@ -1,4 +1,4 @@
-export type NewsSource = "hackernews" | "devto" | "reddit";
+export type NewsSource = "hackernews" | "devto" | "reddit" | "lobsters" | "hashnode";
 
 export interface NewsItem {
   id: string;

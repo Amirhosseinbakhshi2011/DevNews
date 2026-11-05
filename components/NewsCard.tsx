@@ -18,6 +18,16 @@ const sourceConfig = {
     color: "bg-orange-600",
     text: "text-orange-700 dark:text-orange-300",
   },
+  lobsters: {
+    label: "Lobsters",
+    color: "bg-red-600",
+    text: "text-red-600 dark:text-red-400",
+  },
+  hashnode: {
+    label: "Hashnode",
+    color: "bg-blue-600",
+    text: "text-blue-600 dark:text-blue-400",
+  },
 };
 
 export default function NewsCard({ item }: { item: NewsItem }) {
