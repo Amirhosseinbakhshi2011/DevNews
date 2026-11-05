@@ -83,8 +83,11 @@ export default async function Home({
       </main>
 
       <footer className="border-t border-slate-200 dark:border-slate-800 mt-12 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
-        <p>
-          ساخته شده با ❤️ و Next.js • منابع: HN + Dev.to + Reddit + Lobsters + Hashnode
+        <p className="font-medium text-slate-700 dark:text-slate-300">
+          ساخته شده توسط <span className="text-blue-600 dark:text-blue-400">امیرحسین بخشی</span>
+        </p>
+        <p className="mt-2">
+          با ❤️ و Next.js • منابع: HN + Dev.to + Reddit + Lobsters + Hashnode
         </p>
         <p className="mt-1 text-xs">
           داده‌ها هر ۵ دقیقه به‌روز می‌شوند
